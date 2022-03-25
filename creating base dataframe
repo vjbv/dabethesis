@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Mar 24 15:40:55 2022
+
+@author: vinceball
+"""
+#%%
+import pandas as pd
+
+
+#%%
+#load data
+
+Energy_Data = pd.read_csv("Data_Actual.csv", delimiter = ',', thousands = ',')
+
+#%%
+#Break timestamp into hours and dates
+#build hour model using hour data and build day of the week model using day of the week
+
+Energy_Data['Date_Time of day'] = pd.to_datetime(Energy_Data['Date_Time of day'])
+Energy_Data['Month'] = pd.to_datetime(Energy_Data['Date_Time of day']).dt.month
+Energy_Data["Time"] = pd.to_datetime(Energy_Data['Date_Time of day']).dt.time
+Energy_Data["Year"] = pd.to_datetime(Energy_Data['Date_Time of day']).dt.year
+Energy_Data["Date"] = pd.to_datetime(Energy_Data['Date_Time of day']).dt.date
+
+def weekday_definition(orig_weekday_type):
+    if orig_weekday_type == 0:
+        return 'Monday'
+    elif orig_weekday_type >=1 and orig_weekday_type <=3:
+        return 'Tuesday-Thursday'
+    elif orig_weekday_type == 4:
+        return 'Friday'
+    elif orig_weekday_type == 5:
+        return 'Saturday'
+    elif orig_weekday_type == 6:
+        return 'Sunday'
+    elif orig_weekday_type == 7:
+        return 'Holiday'
+
+Energy_Data['Daytype'] = Energy_Data['Day of Week'].apply(weekday_definition)
+Energy_Data.rename(columns = {'Germany/Luxembourg[€/MWh]':'Spot Price'}, inplace = True)
+
+#Rename Specific Columns df. rename(columns = {'old_col1':'new_col1', 'old_col2':'new_col2'}, inplace = True)
+
+#%%
+#build target vector for hourly curve which is hourly prices normalized such that the hourly weights for a day sum to 1
+#add all prices for a day together and then divide each day by the weekly sum
+
+#version1 we are going with normalizing prices based dividing by weekly average
+
+month_avg = (Energy_Data[['Spot Price','Year','Month']].groupby(by=['Year','Month']).mean()
+            .rename(columns={'Spot Price':'Monthly_Avg'}))
+
+daily_avg = (Energy_Data[['Spot Price','Date']].groupby(by=['Date']).mean()
+            .rename(columns={'Spot Price':'Daily_Avg'}))
+#%%
+#Merge month and daily avg back in
+
+Energy_Data = pd.merge(
+    Energy_Data,
+    month_avg,
+    how='left',
+    on = ['Month','Year']
+    )
+
+Energy_Data = pd.merge(
+    Energy_Data,
+    daily_avg,
+    how = 'left',
+    on = ['Date']
+    )
+
+
+#%%
+# build target vector for day curve which is daily prices normalized such that the daily weights for any given week sum to unity
+#add together the average prices for each day and divide each daily average by weekly sum
+
+Energy_Data['Ratio Spot Daily'] = Energy_Data['Spot Price']/Energy_Data['Daily_Avg']
+Energy_Data['Ratio Spot Monthly'] = Energy_Data['Spot Price']/Energy_Data['Monthly_Avg']
+
+
+
+
+#%%
+#pull out relevant variables
+Energy_Data_Final = Energy_Data[["Ratio Spot Daily","Ratio Spot Monthly", 'Daytype', "Month", 'Year',
+                                 'Day of Week','Total (grid load)[MWh]', 'Wind offshore[MWh]', 'Wind onshore[MWh]',
+                                 'Photovoltaics[MWh]' ,'Nuclear[MWh]','Other renewable[MWh]']]
+#%%
+#export
+Energy_Data_Final.to_csv('Energy Data.csv', index=False)
+
+
+
