@@ -14,6 +14,5 @@ data['Wind offshore[MWh]'] = (data['Wind offshore[MWh]']-data['Wind offshore[MWh
 data['Wind onshore[MWh]'] = (data['Wind onshore[MWh]']-data['Wind onshore[MWh]'].mean())/data['Wind onshore[MWh]'].std()
 data['Photovoltaics[MWh]'] = (data['Photovoltaics[MWh]']-data['Photovoltaics[MWh]'].mean())/data['Photovoltaics[MWh]'].std()
 data['Other renewable[MWh]'] = (data['Other renewable[MWh]']-data['Other renewable[MWh]'].mean())/data['Other renewable[MWh]'].std()
-data['Other renewable[MWh]'] = (data['Other renewable[MWh]']-data['Other renewable[MWh]'].mean())/data['Other renewable[MWh]'].std()
 data['Nuclear[MWh]'] = (data['Nuclear[MWh]']-data['Nuclear[MWh]'].mean())/data['Nuclear[MWh]'].std()
 data['Total (grid load)[MWh]'] = (data['Total (grid load)[MWh]']-data['Total (grid load)[MWh]'].mean())/data['Total (grid load)[MWh]'].std()
