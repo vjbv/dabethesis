@@ -6,7 +6,7 @@ Created on Fri Mar 25 11:48:03 2022
 """
 #%%
 #Standardize all covariates
-
+import pandas as pd
 data = pd.read_csv("Energy_Data.csv", delimiter=",", thousands=',')
 
 
