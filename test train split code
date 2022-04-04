@@ -13,5 +13,9 @@ X_train, X_test, Y_train, Y_test = train_test_split(X,
                                                     test_size=0.2,
                                                     random_state=0
                                                     )
+X_train.to_csv('X_train.csv')
+X_test.to_csv('X_test.csv')
+Y_train.to_csv('Y_train.csv')
+Y_test.to_csv('Y_test.csv')
 
 #Voila
