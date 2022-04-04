@@ -1,0 +1,17 @@
+# Create Test and Train set
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+X = pd.read_csv("Energy Data Thiqq.csv", delimiter=",", thousands=',').dropna()
+Y_index =['Ratio Spot Monthly']
+Y = X[Y_index]
+
+X = X.drop(Y_index, axis = 1)
+X_train, X_test, Y_train, Y_test = train_test_split(X,
+                                                    Y,
+                                                    test_size=0.2,
+                                                    random_state=0
+                                                    )
+
+#Voila
