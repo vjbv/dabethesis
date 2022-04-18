@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Apr 11 13:52:14 2022
+
+@author: vinceball
+"""
+import xgboost as xgb
+from xgboost import XGBRegressor
+import pandas as pd
+import numpy as np
+
+from sklearn.metrics import r2_score 
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RepeatedKFold
+from sklearn.metrics import mean_squared_error, make_scorer
+
+
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+#%%
+#load in test and training data
+X = pd.read_csv('X_train.csv', delimiter = ',', thousands = ',').set_index('Unnamed: 0').sort_index()
+Y = pd.read_csv('Y_train.csv', delimiter = ',', thousands = ',').set_index('Unnamed: 0').sort_index()
+X_test = pd.read_csv('X_test.csv', delimiter = ',', thousands = ',').set_index('Unnamed: 0').sort_index()
+Y_test = pd.read_csv('Y_test.csv', delimiter = ',', thousands = ',').set_index('Unnamed: 0').sort_index()
+
+#%%
+#remove month and year
+X = X.drop(['Month', "Year"], axis=1)
+X_test = X_test.drop(['Month', "Year"], axis =1)
+#%%
+#convert time to string
+X['Time'] = pd.to_datetime(X['Time']).dt.hour.apply(str)
+
+X_test['Time'] = pd.to_datetime(X_test['Time']).dt.hour.apply(str)
+
+#%%
+#convert strings to dummy variables
+
+X_dumb = pd.get_dummies(data=X[['Time','Daytype']], drop_first=False)
+X_test_dumb = pd.get_dummies(data=X_test[['Time',"Daytype"]], drop_first=False)
+
+X.drop(['Time','Daytpe'], axis =1, inplace = True)
+X_test.drop(['Time','Daytpe'], axis = 1, inplace = True)
+
+#%%
+#replace in time dummies
+
+X = pd.concat([X, X_dumb], axis = 1)
+X_test = pd.concat([X_test, X_test_dumb], axis = 1)
+
+#Renaming for XGBoost
+X.rename(columns = {'Photovoltaics[MWh]':'PV', 'Wind onshore[MWh]':'Wind Onshore', 'Wind offshore[MWh]': 'Wind Offshore'}, inplace = True)
+
+#%%
+
+model = XGBRegressor(reg_alpha = 1, objective='reg:squarederror', max_depth = 9)
+
+model.fit(X, Y)
+
+Y_hat = model.predict(X_test)
+
+XGBoost_R2 = r2_score(Y_test, Y_hat)
+
+#%%
+'''
+here I am making the parameters to check for in the CV. It'll be an interative thing as I narrow down
+to the best possible hyperparameters from a very wide range. Limitation of this method is the stochastic
+nature of the procedure. Approaching a local minima of error rather than a global minima. I'll keep all
+iterations as comments to show the progression.
+
+xgboost default max_depth = 6, colsample_bytree = 1, eta = .3
+'''
+mse = make_scorer(mean_squared_error)
+
+XGB = xgb.XGBRegressor(objective='reg:squarederror')
+
+params = {'max_depth': [4,5,6,7,8,9],
+          'eta' : [.05,.1,.2,.3,.4,.45,.5],
+          'reg_alpha' :[1],
+          'colsample_bytree': [.8, .9, 1]}
+
+
+CV_Boost = GridSearchCV(XGB, 
+                        params,
+                        n_jobs=-1,
+                        refit = True,
+                        cv = 3,
+                        scoring = mse,
+                        verbose=0)
+
+CV_Boost.fit(X, Y)
+
+Y_hat_CV = CV_Boost.predict(X_test)
+
+XGBoost_CV_R2 = r2_score(Y_test, Y_hat_CV)
+
+#%%
+xgb.plot_importance(model)
+
+
+
+
+
+
+
+
